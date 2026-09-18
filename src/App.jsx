@@ -5,6 +5,7 @@ import { buildHtmlReport } from "./lib/htmlReport.js"
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"]
 const OPS = ["equals", "notEquals", "contains", "exists", "notExists", "lessThan", "greaterThan", "matches"]
 const HISTORY_KEY = "qa-bench-history-v1"
+const SUITES_KEY = "qa-bench-suites-v1"
 
 function uid(prefix = "step") {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}`
@@ -119,6 +120,35 @@ function defaultSuite() {
   }
 }
 
+function blankSuite() {
+  return {
+    name: "Untitled suite",
+    baseUrl: "",
+    variablesText: "",
+    steps: [
+      {
+        id: uid(),
+        title: "New step",
+        method: "GET",
+        endpoint: "/",
+        headersText: "",
+        bodyText: "",
+        schemaText: "",
+        assertions: [{ path: "status", op: "lessThan", valueText: "300" }],
+        extract: []
+      }
+    ]
+  }
+}
+
+function listSavedSuites() {
+  try {
+    return JSON.parse(localStorage.getItem(SUITES_KEY) ?? "{}")
+  } catch {
+    return {}
+  }
+}
+
 function stepToPayload(step) {
   return {
     id: step.id,
@@ -146,6 +176,9 @@ export default function App() {
   const [genOpen, setGenOpen] = useState(false)
   const [genForm, setGenForm] = useState({ method: "GET", endpoint: "", responseText: "" })
   const [genBusy, setGenBusy] = useState(false)
+  const [savedSuites, setSavedSuites] = useState(listSavedSuites)
+  const [loadSelection, setLoadSelection] = useState("")
+  const [saveFlash, setSaveFlash] = useState(false)
   const resultsRef = useRef(null)
 
   useEffect(() => {
@@ -189,6 +222,54 @@ export default function App() {
       ;[steps[index], steps[target]] = [steps[target], steps[index]]
       return { ...prev, steps }
     })
+  }
+
+  function saveSuite() {
+    const name = suite.name.trim()
+    if (!name) {
+      setError("Give the suite a name before saving.")
+      return
+    }
+    const all = listSavedSuites()
+    all[name] = suite
+    localStorage.setItem(SUITES_KEY, JSON.stringify(all))
+    setSavedSuites(all)
+    setLoadSelection(name)
+    setSaveFlash(true)
+    setTimeout(() => setSaveFlash(false), 1500)
+  }
+
+  function handleLoadChange(event) {
+    const name = event.target.value
+    setLoadSelection(name)
+    if (!name) return
+    const all = listSavedSuites()
+    const found = all[name]
+    if (!found) return
+    setSuite(found)
+    setReport(null)
+    setDiff(null)
+    setError("")
+    if (found.steps[0]) setSelectedStepId(found.steps[0].id)
+  }
+
+  function deleteSelectedSuite() {
+    if (!loadSelection) return
+    const all = listSavedSuites()
+    delete all[loadSelection]
+    localStorage.setItem(SUITES_KEY, JSON.stringify(all))
+    setSavedSuites(all)
+    setLoadSelection("")
+  }
+
+  function startNewSuite() {
+    const fresh = blankSuite()
+    setSuite(fresh)
+    setSelectedStepId(fresh.steps[0].id)
+    setLoadSelection("")
+    setReport(null)
+    setDiff(null)
+    setError("")
   }
 
   function loadHistory(name) {
@@ -337,6 +418,28 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      <div className="suite-bar">
+        <span className="suite-bar-label">My suites</span>
+        <button className="btn tiny" onClick={startNewSuite}>
+          + New
+        </button>
+        <button className="btn tiny" onClick={saveSuite}>
+          Save
+        </button>
+        <select className="suite-select" value={loadSelection} onChange={handleLoadChange}>
+          <option value="">Load saved…</option>
+          {Object.keys(savedSuites).map(name => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+        <button className="btn tiny danger" onClick={deleteSelectedSuite} disabled={!loadSelection}>
+          Delete
+        </button>
+        {saveFlash && <span className="save-flash">Saved</span>}
+      </div>
 
       {error && <div className="banner error">{error}</div>}
 

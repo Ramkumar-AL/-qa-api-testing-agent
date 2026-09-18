@@ -191,6 +191,43 @@ textarea:focus {
   margin-top: 12px;
 }
 
+/* ---------- Suite bar (save/load/delete) ---------- */
+
+.suite-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(24, 28, 34, 0.6);
+  flex-wrap: wrap;
+}
+
+.suite-bar-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-right: 2px;
+}
+
+.suite-select {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  font-size: 12px;
+  color: var(--text);
+  max-width: 220px;
+}
+
+.save-flash {
+  font-size: 12px;
+  color: var(--green);
+  font-family: var(--font-mono);
+}
+
 /* ---------- Banner ---------- */
 
 .banner.error {
